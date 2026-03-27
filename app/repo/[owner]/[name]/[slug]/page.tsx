@@ -63,7 +63,6 @@ import {
   X,
   GitBranch,
   Cloud,
-  Check,
 } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -199,7 +198,7 @@ export default function PostEditor() {
     };
 
     void loadBranches();
-  }, [session?.accessToken, owner, repoName, listBranches, getDefaultBranch]);
+  }, [session?.accessToken, owner, repoName, listBranches, getDefaultBranch, selectedBranch]);
 
   const sourceUpdatedAt = useMemo(() => post?.sha ?? post?.path ?? null, [post?.path, post?.sha]);
 

@@ -5,6 +5,7 @@ export interface Post {
   description: string;
   tags: string[];
   audio?: string;
+  images?: string[];
   content: string;
   modified: boolean;
   sha?: string;

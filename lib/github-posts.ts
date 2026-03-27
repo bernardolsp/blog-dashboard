@@ -62,6 +62,14 @@ function normalizeTags(value: unknown) {
   return value.filter((tag): tag is string => typeof tag === "string");
 }
 
+function normalizeImages(value: unknown) {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  return value.filter((image): image is string => typeof image === "string");
+}
+
 function isGitHubContentFile(item: GitHubTreeItem): item is GitHubContentFile {
   return (
     item.type === "blob" &&
@@ -154,6 +162,7 @@ export function parsePostFile(path: string, content: string, sha?: string): Post
       typeof parsed.data.description === "string" ? parsed.data.description : "",
     tags: normalizeTags(parsed.data.tags),
     audio: typeof parsed.data.audio === "string" ? parsed.data.audio : undefined,
+    images: normalizeImages(parsed.data.images),
     content: parsed.content,
     modified: false,
     sha,

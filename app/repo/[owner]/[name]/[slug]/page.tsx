@@ -358,6 +358,22 @@ export default function PostEditor() {
     return parsedDate;
   }, [post?.date]);
 
+  // Replace [images/N] placeholders with actual markdown images
+  const renderContentWithImages = useCallback((content: string, images?: string[]) => {
+    if (!images || images.length === 0) {
+      return content;
+    }
+
+    let renderedContent = content;
+    images.forEach((imageUrl, index) => {
+      const placeholder = `[images/${index}]`;
+      const imageMarkdown = `![Image ${index + 1}](${imageUrl})`;
+      renderedContent = renderedContent.replace(new RegExp(placeholder.replace(/[\[\]/]/g, '\\$&'), 'g'), imageMarkdown);
+    });
+
+    return renderedContent;
+  }, []);
+
   const savePost = async () => {
     if (!post) {
       return;
@@ -384,6 +400,10 @@ export default function PostEditor() {
 
       if (post.audio) {
         frontmatter.audio = post.audio;
+      }
+
+      if (post.images && post.images.length > 0) {
+        frontmatter.images = post.images;
       }
 
       const content = matter.stringify(post.content, frontmatter);
@@ -484,6 +504,10 @@ export default function PostEditor() {
 
       if (post.audio) {
         frontmatter.audio = post.audio;
+      }
+
+      if (post.images && post.images.length > 0) {
+        frontmatter.images = post.images;
       }
 
       const content = matter.stringify(post.content, frontmatter);
@@ -612,17 +636,18 @@ export default function PostEditor() {
       if (type === "audio") {
         updatePost({ audio: url });
       } else {
-        const imageMarkdown = `![${safeFileName}](${url})`;
-        setPost((currentPost) => {
-          if (!currentPost) {
-            return currentPost;
-          }
-
-          return {
-            ...currentPost,
-            content: `${currentPost.content}\n\n${imageMarkdown}`,
-            modified: true,
-          };
+        // Add image to frontmatter and insert placeholder reference in content
+        const currentImages = post.images || [];
+        const imageIndex = currentImages.length;
+        const newImages = [...currentImages, url];
+        
+        // Insert placeholder at end of content or where cursor is
+        const placeholder = `\n\n[images/${imageIndex}]\n`;
+        const currentContent = post.content || "";
+        
+        updatePost({ 
+          images: newImages,
+          content: currentContent + placeholder 
         });
       }
 
@@ -667,6 +692,23 @@ export default function PostEditor() {
       return {
         ...currentPost,
         tags: currentPost.tags.filter((tag) => tag !== tagToRemove),
+        modified: true,
+      };
+    });
+  };
+
+  const removeImage = (imageIndex: number) => {
+    setPost((currentPost) => {
+      if (!currentPost || !currentPost.images) {
+        return currentPost;
+      }
+
+      const newImages = [...currentPost.images];
+      newImages.splice(imageIndex, 1);
+
+      return {
+        ...currentPost,
+        images: newImages,
         modified: true,
       };
     });
@@ -1236,6 +1278,37 @@ export default function PostEditor() {
                           </div>
                         </div>
                       )}
+
+                      {post.images && post.images.length > 0 && (
+                        <div>
+                          <label className="text-xs text-muted-foreground mb-2 block">
+                            Imagens ({post.images.length})
+                          </label>
+                          <div className="space-y-2">
+                            {post.images.map((image, index) => (
+                              <div
+                                key={image}
+                                className="flex items-center gap-2 p-3 rounded-lg bg-amber-500/10 border border-amber-500/20"
+                              >
+                                <ImageIcon size={16} className="text-amber-500" />
+                                <span className="text-sm truncate flex-1 font-mono text-xs">
+                                  [images/{index}]
+                                </span>
+                                <span className="text-xs text-muted-foreground truncate max-w-[100px]">
+                                  {image.split("/").pop()}
+                                </span>
+                                <button
+                                  type="button"
+                                  onClick={() => removeImage(index)}
+                                  className="text-muted-foreground hover:text-destructive"
+                                >
+                                  <Trash2 size={14} />
+                                </button>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
                     </div>
                   </div>
 
@@ -1290,10 +1363,21 @@ export default function PostEditor() {
                             </span>
                           </>
                         )}
+                        {post.images && post.images.length > 0 && (
+                          <>
+                            <span>-</span>
+                            <span className="flex items-center gap-1 text-amber-500">
+                              <ImageIcon size={14} />
+                              {post.images.length} imagem{post.images.length > 1 ? "ns" : ""}
+                            </span>
+                          </>
+                        )}
                       </div>
                     </header>
                     <div className="prose prose-invert prose-amber max-w-none">
-                      <Markdown remarkPlugins={[remarkGfm]}>{post.content}</Markdown>
+                      <Markdown remarkPlugins={[remarkGfm]}>
+                        {renderContentWithImages(post.content, post.images)}
+                      </Markdown>
                     </div>
                   </article>
                 </div>

@@ -1,0 +1,16 @@
+version: "3.9"
+
+services:
+  blog-dashboard:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: blog-dashboard
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    env_file:
+      - .env.local
+    environment:
+      NODE_ENV: production
+      PORT: 3000

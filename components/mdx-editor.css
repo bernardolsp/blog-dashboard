@@ -1,0 +1,288 @@
+@layer mdx-editor {
+  /* MDXEditor Dark Theme - Content Area Styling */
+  
+  /* The main content editable area */
+  .mdxeditor {
+    background-color: hsl(30 20% 8%);
+    border-radius: 0.5rem;
+    display: flex;
+    flex-direction: column;
+    min-height: 100%;
+  }
+
+  /* Target the actual content editable div specifically */
+  .mdxeditor > div[class*="contentEditable"] {
+    background-color: hsl(30 20% 8%) !important;
+    color: hsl(40 15% 92%) !important;
+    padding: 1.5rem !important;
+    font-family: var(--font-display) !important;
+    font-size: 1.125rem !important;
+    line-height: 1.8 !important;
+  }
+
+  /* Content styling via the className prop */
+  .mdxeditor-prose {
+    color: hsl(40 15% 92%) !important;
+    font-family: var(--font-display) !important;
+    font-size: 1.125rem !important;
+    line-height: 1.8 !important;
+  }
+
+  .mdxeditor-prose > * {
+    color: hsl(40 15% 92%) !important;
+  }
+
+  /* Typography - very specific to avoid breaking UI */
+  .mdxeditor-prose h1,
+  .mdxeditor-prose h2,
+  .mdxeditor-prose h3,
+  .mdxeditor-prose h4 {
+    color: hsl(40 15% 95%) !important;
+    font-weight: 600 !important;
+    letter-spacing: -0.02em !important;
+    margin-top: 1.5em !important;
+    margin-bottom: 0.5em !important;
+  }
+
+  .mdxeditor-prose h1 {
+    font-size: 2rem !important;
+  }
+
+  .mdxeditor-prose h2 {
+    font-size: 1.5rem !important;
+  }
+
+  .mdxeditor-prose h3 {
+    font-size: 1.25rem !important;
+  }
+
+  .mdxeditor-prose p {
+    color: hsl(40 15% 92%) !important;
+    margin-bottom: 1.25em !important;
+  }
+
+  /* Lists */
+  .mdxeditor-prose ul,
+  .mdxeditor-prose ol {
+    color: hsl(40 15% 92%) !important;
+    margin-left: 1.5em !important;
+    margin-bottom: 1.25em !important;
+  }
+
+  .mdxeditor-prose li {
+    color: hsl(40 15% 92%) !important;
+    margin-bottom: 0.5em !important;
+  }
+
+  /* Links */
+  .mdxeditor-prose a {
+    color: hsl(35 80% 60%) !important;
+    text-decoration: none !important;
+    border-bottom: 1px solid hsl(35 80% 60% / 0.3) !important;
+  }
+
+  .mdxeditor-prose a:hover {
+    border-bottom-color: hsl(35 80% 60%) !important;
+  }
+
+  /* Strong and emphasis */
+  .mdxeditor-prose strong {
+    color: hsl(40 15% 95%) !important;
+    font-weight: 600 !important;
+  }
+
+  .mdxeditor-prose em {
+    font-style: italic !important;
+    color: hsl(40 15% 92%) !important;
+  }
+
+  /* Code */
+  .mdxeditor-prose code {
+    background: hsl(30 10% 18%) !important;
+    color: hsl(40 15% 92%) !important;
+    padding: 0.2em 0.4em !important;
+    border-radius: 0.25rem !important;
+    font-family: var(--font-mono) !important;
+    font-size: 0.9em !important;
+  }
+
+  .mdxeditor-prose pre {
+    background: hsl(30 10% 12%) !important;
+    border: 1px solid hsl(30 10% 20%) !important;
+    border-radius: 0.5rem !important;
+    padding: 1rem !important;
+    margin: 1em 0 !important;
+    overflow-x: auto !important;
+  }
+
+  .mdxeditor-prose pre code {
+    background: none !important;
+    padding: 0 !important;
+  }
+
+  /* Blockquotes */
+  .mdxeditor-prose blockquote {
+    color: hsl(40 15% 92%) !important;
+    border-left: 3px solid hsl(35 80% 60%) !important;
+    background: hsl(30 10% 15%) !important;
+    padding: 1em 1.5em !important;
+    margin: 1.5em 0 !important;
+    font-style: italic !important;
+  }
+
+  /* Tables */
+  .mdxeditor-prose table {
+    width: 100% !important;
+    border-collapse: collapse !important;
+    margin: 1em 0 !important;
+  }
+
+  .mdxeditor-prose th,
+  .mdxeditor-prose td {
+    border: 1px solid hsl(30 10% 20%) !important;
+    padding: 0.5rem !important;
+    color: hsl(40 15% 92%) !important;
+  }
+
+  .mdxeditor-prose th {
+    background: hsl(30 10% 15%) !important;
+    font-weight: 600 !important;
+  }
+
+  /* Horizontal rule */
+  .mdxeditor-prose hr {
+    border: none !important;
+    border-top: 2px solid hsl(30 10% 25%) !important;
+    margin: 2em auto !important;
+    width: 60px !important;
+  }
+
+  /* Selection */
+  .mdxeditor-prose ::selection {
+    background: hsl(35 80% 60% / 0.3) !important;
+    color: hsl(40 15% 92%) !important;
+  }
+
+  /* Toolbar styling */
+  [class*="mdxeditor-toolbar"],
+  .mdxeditor [class*="toolbar"] {
+    background-color: hsl(30 15% 12%) !important;
+    border-bottom: 1px solid hsl(30 10% 20%) !important;
+    padding: 0.5rem !important;
+  }
+
+  /* Toolbar buttons */
+  [class*="mdxeditor-toolbar"] button,
+  .mdxeditor [class*="toolbar"] button {
+    color: hsl(40 15% 92%) !important;
+    background: transparent !important;
+    border: none !important;
+    padding: 0.375rem !important;
+    border-radius: 0.25rem !important;
+  }
+
+  /* Toolbar icons (SVG) */
+  [class*="mdxeditor-toolbar"] button svg,
+  .mdxeditor [class*="toolbar"] button svg,
+  [class*="mdxeditor-toolbar"] [class*="icon"] svg,
+  .mdxeditor [class*="toolbar"] [class*="icon"] svg {
+    fill: hsl(40 15% 92%) !important;
+    color: hsl(40 15% 92%) !important;
+    stroke: hsl(40 15% 92%) !important;
+  }
+
+  /* Active state icons */
+  [class*="mdxeditor-toolbar"] button[data-active="true"] svg,
+  .mdxeditor [class*="toolbar"] button[data-active="true"] svg,
+  [class*="mdxeditor-toolbar"] button[aria-pressed="true"] svg,
+  .mdxeditor [class*="toolbar"] button[aria-pressed="true"] svg {
+    fill: hsl(35 80% 60%) !important;
+    color: hsl(35 80% 60%) !important;
+    stroke: hsl(35 80% 60%) !important;
+  }
+
+  [class*="mdxeditor-toolbar"] button:hover,
+  .mdxeditor [class*="toolbar"] button:hover {
+    background-color: hsl(30 10% 18%) !important;
+  }
+
+  [class*="mdxeditor-toolbar"] button[data-active="true"],
+  .mdxeditor [class*="toolbar"] button[data-active="true"] {
+    color: hsl(35 80% 60%) !important;
+    background-color: hsl(35 80% 60% / 0.1) !important;
+  }
+
+  /* Dialogs and popups */
+  [role="dialog"] {
+    background-color: hsl(30 15% 10%) !important;
+    border: 1px solid hsl(30 10% 20%) !important;
+    border-radius: 0.5rem !important;
+    color: hsl(40 15% 92%) !important;
+  }
+
+  /* Input fields */
+  [role="dialog"] input,
+  [role="dialog"] textarea {
+    background: hsl(30 20% 8%) !important;
+    border: 1px solid hsl(30 10% 20%) !important;
+    color: hsl(40 15% 92%) !important;
+    padding: 0.5rem !important;
+    border-radius: 0.25rem !important;
+  }
+
+  [role="dialog"] input:focus,
+  [role="dialog"] textarea:focus {
+    outline: none !important;
+    border-color: hsl(35 80% 60%) !important;
+  }
+
+  /* Dialog buttons */
+  [role="dialog"] button {
+    padding: 0.5rem 1rem !important;
+    border-radius: 0.25rem !important;
+    cursor: pointer !important;
+  }
+
+  /* Primary button */
+  [role="dialog"] button[class*="primary"],
+  [role="dialog"] button[type="submit"] {
+    background-color: hsl(35 80% 60%) !important;
+    color: hsl(30 10% 8%) !important;
+    border: none !important;
+  }
+
+  /* Secondary button */
+  [role="dialog"] button:not([class*="primary"]):not([type="submit"]) {
+    background: transparent !important;
+    color: hsl(40 15% 92%) !important;
+    border: 1px solid hsl(30 10% 20%) !important;
+  }
+
+  [role="dialog"] button:not([class*="primary"]):not([type="submit"]):hover {
+    background: hsl(30 10% 18%) !important;
+  }
+
+  /* Dropdown menus */
+  [role="listbox"],
+  [role="menu"] {
+    background-color: hsl(30 15% 10%) !important;
+    border: 1px solid hsl(30 10% 20%) !important;
+    border-radius: 0.5rem !important;
+  }
+
+  [role="option"] {
+    color: hsl(40 15% 92%) !important;
+    padding: 0.5rem !important;
+  }
+
+  [role="option"]:hover,
+  [role="option"][data-highlighted] {
+    background-color: hsl(30 10% 18%) !important;
+  }
+
+  /* Placeholder */
+  [data-placeholder]::before {
+    color: hsl(35 10% 55%) !important;
+    font-style: italic !important;
+  }
+}

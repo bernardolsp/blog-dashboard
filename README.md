@@ -1,36 +1,113 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Blog Dashboard
 
-## Getting Started
+Blog Dashboard is a Next.js 14 app for browsing your GitHub repositories, editing markdown posts, previewing content, and publishing changes through GitHub OAuth.
 
-First, run the development server:
+## What It Does
+
+- Signs in with GitHub using NextAuth
+- Lists repositories you can manage
+- Loads post metadata from markdown frontmatter and sorts posts by date
+- Edits posts with MDXEditor and previews them with `react-markdown`
+- Uploads media through the GitHub contents API
+- Runs well in Docker with Bun
+
+## Required Environment Variables
+
+Copy the template and fill in real values before running locally or in Docker:
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+cp .env.example .env.local
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Required variables:
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+- `NEXTAUTH_URL` - public URL where the app is served
+- `NEXTAUTH_SECRET` - long random secret for session encryption
+- `GITHUB_CLIENT_ID` - GitHub OAuth app client ID
+- `GITHUB_CLIENT_SECRET` - GitHub OAuth app client secret
+- `GITHUB_REDIRECT_URI` - GitHub OAuth callback URL, usually `https://your-domain/api/auth/callback/github`
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Generate a secret with:
 
-## Learn More
+```bash
+openssl rand -base64 32
+```
 
-To learn more about Next.js, take a look at the following resources:
+## Local Development
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+Install dependencies and start the app:
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+```bash
+bun install
+bun run dev
+```
 
-## Deploy on Vercel
+Then open `http://localhost:3000`.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+If you prefer npm, the project still supports the usual `npm install` and `npm run dev` flow, but the container build uses Bun.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Docker Compose
+
+This repo includes a Bun-based `Dockerfile` and a `docker-compose.yml` for running on a VM or homelab box.
+
+1. Create `.env.local` with your real secrets.
+2. Build and start the container:
+
+```bash
+docker compose build
+docker compose up -d
+```
+
+3. Open `http://localhost:3000` or your reverse-proxied hostname.
+
+The compose file reads secrets from `.env.local`, so sensitive values are not hardcoded into versioned config.
+
+## GitHub OAuth Setup
+
+Create a GitHub OAuth app and configure:
+
+- Homepage URL: your app URL, for example `https://blog.example.com`
+- Authorization callback URL: `https://blog.example.com/api/auth/callback/github`
+
+The callback URL must match `GITHUB_REDIRECT_URI`.
+
+## Publishing an Image to GHCR
+
+The repo includes a GitHub Actions workflow that builds the Docker image and publishes it to GitHub Container Registry.
+
+What it does:
+
+- builds on pushes to `main`
+- builds on tags like `v1.0.0`
+- publishes `ghcr.io/<owner>/<repo>:main`
+- publishes a sha-tagged image
+- publishes a semver tag when you push a version tag
+
+The workflow uses the built-in `GITHUB_TOKEN`, so you do not need a separate registry password as long as the repository has permission to publish packages.
+
+## Running the Published Image
+
+After the workflow pushes an image, you can run it directly:
+
+```bash
+docker run -d \
+  --name blog-dashboard \
+  -p 3000:3000 \
+  --env-file .env.local \
+  ghcr.io/<owner>/<repo>:main
+```
+
+## Stack
+
+- Next.js 14
+- React 18
+- NextAuth
+- MDXEditor
+- Tailwind CSS
+- Bun for container builds
+
+## Notes
+
+- Keep `.env.local` out of git.
+- `.env.example` is safe to commit and should only contain placeholders.
+- This app depends on GitHub OAuth and GitHub repository access to function correctly.

@@ -179,7 +179,11 @@ export default function PostsList() {
   };
 
   const openPost = (post: Post) => {
-    router.push(`/repo/${owner}/${name}/${post.slug}`);
+    const url = new URL(`/repo/${owner}/${name}/${post.slug}`, window.location.origin);
+    if (selectedBranch) {
+      url.searchParams.set("branch", selectedBranch);
+    }
+    router.push(url.pathname + url.search);
   };
 
   if (status === "loading") {

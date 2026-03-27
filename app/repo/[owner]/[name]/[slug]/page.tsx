@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useMemo, lazy, Suspense } from "react";
 import { useSession, signOut } from "next-auth/react";
-import { useParams, useRouter } from "next/navigation";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import Markdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { useGitHub } from "@/hooks/use-github";
@@ -102,6 +102,7 @@ function sanitizeFileName(name: string) {
 export default function PostEditor() {
   const params = useParams<{ owner: string; name: string; slug: string }>();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { data: session, status } = useSession();
   const {
     createOrUpdateFile,
@@ -133,7 +134,7 @@ export default function PostEditor() {
   const [isCreatingPr, setIsCreatingPr] = useState(false);
   const [draftPaths, setDraftPaths] = useState<Set<string>>(new Set());
   const [branches, setBranches] = useState<Array<{ name: string; commit: { sha: string } }>>([]);
-  const [selectedBranch, setSelectedBranch] = useState<string>("");
+  const [selectedBranch, setSelectedBranch] = useState<string>(searchParams.get("branch") ?? "");
   const [isLoadingBranches, setIsLoadingBranches] = useState(false);
 
   useEffect(() => {
@@ -764,7 +765,17 @@ export default function PostEditor() {
           </label>
           <Select
             value={selectedBranch}
-            onValueChange={setSelectedBranch}
+            onValueChange={(value) => {
+              setSelectedBranch(value);
+              // Update URL with new branch
+              const url = new URL(window.location.href);
+              if (value) {
+                url.searchParams.set("branch", value);
+              } else {
+                url.searchParams.delete("branch");
+              }
+              router.replace(url.pathname + url.search, { scroll: false });
+            }}
             disabled={isLoadingBranches || branches.length === 0}
           >
             <SelectTrigger className="w-full bg-background/80 border-border/80 text-sm">
@@ -800,9 +811,13 @@ export default function PostEditor() {
               posts.map((listedPost) => (
                 <button
                   key={listedPost.path ?? listedPost.slug}
-                  onClick={() =>
-                    router.push(`/repo/${owner}/${repoName}/${listedPost.slug}`)
-                  }
+                  onClick={() => {
+                    const url = new URL(`/repo/${owner}/${repoName}/${listedPost.slug}`, window.location.origin);
+                    if (selectedBranch) {
+                      url.searchParams.set("branch", selectedBranch);
+                    }
+                    router.push(url.pathname + url.search);
+                  }}
                   className={`w-full text-left p-4 rounded-lg border transition-all duration-200 group ${
                     listedPost.slug === post?.slug
                       ? "bg-amber-500/10 border-amber-500/30"

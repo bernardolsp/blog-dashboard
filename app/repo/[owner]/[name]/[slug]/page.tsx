@@ -143,21 +143,21 @@ export default function PostEditor() {
   }, [router, status]);
 
   useEffect(() => {
-    const cachedPosts = getCachedPosts(owner, repoName);
+    const cachedPosts = getCachedPosts(owner, repoName, selectedBranch);
     if (cachedPosts) {
       setPosts(cachedPosts);
     }
 
     if (!isNew) {
-      const cachedPost = getCachedPostByPath(owner, repoName, `posts/${slug}.md`)
-        ?? getCachedPostByPath(owner, repoName, `posts/${slug}.mdx`);
+      const cachedPost = getCachedPostByPath(owner, repoName, `posts/${slug}.md`, selectedBranch)
+        ?? getCachedPostByPath(owner, repoName, `posts/${slug}.mdx`, selectedBranch);
 
       if (cachedPost) {
         setPost(cachedPost);
         setOriginalPath(cachedPost.path ?? null);
       }
     }
-  }, [owner, repoName, slug, isNew]);
+  }, [owner, repoName, slug, isNew, selectedBranch]);
 
   const refreshDraftPaths = useCallback(async () => {
     try {
@@ -234,7 +234,9 @@ export default function PostEditor() {
           owner,
           repoName,
           session.accessToken,
-          signal
+          signal,
+          false,
+          selectedBranch
         );
         setPosts(postsList);
       } catch (error) {
@@ -246,7 +248,7 @@ export default function PostEditor() {
         showNotification("Erro ao carregar posts", "error");
       }
     },
-    [session?.accessToken, owner, repoName, showNotification]
+    [session?.accessToken, owner, repoName, showNotification, selectedBranch]
   );
 
   const loadCurrentPost = useCallback(
@@ -271,7 +273,9 @@ export default function PostEditor() {
             repoName,
             path,
             session.accessToken,
-            signal
+            signal,
+            false,
+            selectedBranch
           );
 
           if (loadedPost) {
@@ -294,7 +298,7 @@ export default function PostEditor() {
         // no-op: layout keeps rendering while data streams in
       }
     },
-    [session?.accessToken, owner, repoName, slug, isNew, router, showNotification]
+    [session?.accessToken, owner, repoName, slug, isNew, router, showNotification, selectedBranch]
   );
 
   useEffect(() => {
@@ -310,6 +314,21 @@ export default function PostEditor() {
 
     return () => controller.abort();
   }, [session?.accessToken, loadCurrentPost, loadPosts]);
+
+  // Reload posts and current post when branch changes
+  useEffect(() => {
+    if (!session?.accessToken || !selectedBranch) {
+      return;
+    }
+
+    const controller = new AbortController();
+    void Promise.all([
+      loadCurrentPost(controller.signal),
+      loadPosts(controller.signal),
+    ]);
+
+    return () => controller.abort();
+  }, [selectedBranch, session?.accessToken]);
 
   const updatePost = useCallback((updates: Partial<Post>) => {
     setPost((currentPost) => {
@@ -412,7 +431,7 @@ export default function PostEditor() {
 
       setPost(updatedPost);
       setOriginalPath(targetPath);
-      upsertCachedPost(owner, repoName, updatedPost, currentPath);
+      upsertCachedPost(owner, repoName, updatedPost, currentPath, selectedBranch);
       await clearDraft();
       await refreshDraftPaths();
       showNotification("Post salvo com sucesso!", "success");
@@ -490,7 +509,7 @@ export default function PostEditor() {
       };
 
       setPost(postWithBranch);
-      upsertCachedPost(owner, repoName, postWithBranch, post.path);
+      upsertCachedPost(owner, repoName, postWithBranch, post.path, selectedBranch);
       setBranchName(normalizedBranchName);
       setShowBranchDialog(false);
       showNotification(
@@ -669,7 +688,7 @@ export default function PostEditor() {
       );
 
       if (success) {
-        removeCachedPost(owner, repoName, post.path);
+        removeCachedPost(owner, repoName, post.path, selectedBranch);
         showNotification("Post excluido com sucesso!", "success");
         router.push(`/repo/${owner}/${repoName}`);
         return;

@@ -55,12 +55,12 @@ export default function PostsList() {
   }, [router, status]);
 
   useEffect(() => {
-    const cachedPosts = getCachedPosts(owner, name);
+    const cachedPosts = getCachedPosts(owner, name, selectedBranch);
     if (cachedPosts) {
       setPosts(cachedPosts);
       setIsLoading(false);
     }
-  }, [owner, name]);
+  }, [owner, name, selectedBranch]);
 
   useEffect(() => {
     let cancelled = false;
@@ -106,7 +106,9 @@ export default function PostsList() {
           owner,
           name,
           session.accessToken,
-          signal
+          signal,
+          false,
+          selectedBranch
         );
         setPosts(postsList);
       } catch (error) {
@@ -122,7 +124,7 @@ export default function PostsList() {
         }
       }
     },
-    [session?.accessToken, owner, name, showNotification]
+    [session?.accessToken, owner, name, showNotification, selectedBranch]
   );
 
   useEffect(() => {
@@ -135,6 +137,18 @@ export default function PostsList() {
 
     return () => controller.abort();
   }, [session?.accessToken, loadPosts]);
+
+  // Reload posts when branch changes
+  useEffect(() => {
+    if (!session?.accessToken || !selectedBranch) {
+      return;
+    }
+
+    const controller = new AbortController();
+    void loadPosts(controller.signal);
+
+    return () => controller.abort();
+  }, [selectedBranch, session?.accessToken]);
 
   useEffect(() => {
     const loadBranches = async () => {

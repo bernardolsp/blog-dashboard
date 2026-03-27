@@ -30,8 +30,8 @@ interface PostCacheEntry {
 
 const postCache = new Map<string, PostCacheEntry>();
 
-function getCacheKey(owner: string, repo: string) {
-  return `${owner}/${repo}`;
+function getCacheKey(owner: string, repo: string, branch?: string) {
+  return `${owner}/${repo}${branch ? `:${branch}` : ""}`;
 }
 
 function decodeBase64Utf8(content: string) {
@@ -89,27 +89,27 @@ function sortPostsByDate(posts: Post[]) {
   });
 }
 
-function updateCache(owner: string, repo: string, posts: Post[]) {
-  postCache.set(getCacheKey(owner, repo), {
+function updateCache(owner: string, repo: string, posts: Post[], branch?: string) {
+  postCache.set(getCacheKey(owner, repo, branch), {
     posts: sortPostsByDate(posts),
     postsByPath: new Map(posts.map((post) => [post.path ?? post.slug, post])),
   });
 }
 
-export function getCachedPosts(owner: string, repo: string) {
-  return postCache.get(getCacheKey(owner, repo))?.posts ?? null;
+export function getCachedPosts(owner: string, repo: string, branch?: string) {
+  return postCache.get(getCacheKey(owner, repo, branch))?.posts ?? null;
 }
 
-export function getCachedPostByPath(owner: string, repo: string, path: string) {
-  return postCache.get(getCacheKey(owner, repo))?.postsByPath.get(path) ?? null;
+export function getCachedPostByPath(owner: string, repo: string, path: string, branch?: string) {
+  return postCache.get(getCacheKey(owner, repo, branch))?.postsByPath.get(path) ?? null;
 }
 
-export function upsertCachedPost(owner: string, repo: string, post: Post, previousPath?: string | null) {
-  const cacheKey = getCacheKey(owner, repo);
+export function upsertCachedPost(owner: string, repo: string, post: Post, previousPath?: string | null, branch?: string) {
+  const cacheKey = getCacheKey(owner, repo, branch);
   const currentCache = postCache.get(cacheKey);
 
   if (!currentCache) {
-    updateCache(owner, repo, [post]);
+    updateCache(owner, repo, [post], branch);
     return;
   }
 
@@ -121,11 +121,11 @@ export function upsertCachedPost(owner: string, repo: string, post: Post, previo
   );
 
   nextPosts.push(post);
-  updateCache(owner, repo, nextPosts);
+  updateCache(owner, repo, nextPosts, branch);
 }
 
-export function removeCachedPost(owner: string, repo: string, path: string) {
-  const cacheKey = getCacheKey(owner, repo);
+export function removeCachedPost(owner: string, repo: string, path: string, branch?: string) {
+  const cacheKey = getCacheKey(owner, repo, branch);
   const currentCache = postCache.get(cacheKey);
 
   if (!currentCache) {
@@ -135,7 +135,8 @@ export function removeCachedPost(owner: string, repo: string, path: string) {
   updateCache(
     owner,
     repo,
-    currentCache.posts.filter((post) => post.path !== path)
+    currentCache.posts.filter((post) => post.path !== path),
+    branch
   );
 }
 
@@ -165,15 +166,17 @@ export async function fetchPostsIndex(
   repo: string,
   accessToken: string,
   signal?: AbortSignal,
-  forceRefresh = false
+  forceRefresh = false,
+  branch?: string
 ): Promise<Post[]> {
-  const cachedPosts = !forceRefresh ? getCachedPosts(owner, repo) : null;
+  const cachedPosts = !forceRefresh ? getCachedPosts(owner, repo, branch) : null;
   if (cachedPosts) {
     return cachedPosts;
   }
 
+  const ref = branch || "HEAD";
   const treeResponse = await fetch(
-    `https://api.github.com/repos/${owner}/${repo}/git/trees/HEAD?recursive=1`,
+    `https://api.github.com/repos/${owner}/${repo}/git/trees/${ref}?recursive=1`,
     {
       headers: {
         Authorization: `Bearer ${accessToken}`,
@@ -205,7 +208,8 @@ export async function fetchPostsIndex(
         file.path,
         accessToken,
         signal,
-        forceRefresh
+        forceRefresh,
+        branch
       );
 
       return post;
@@ -213,9 +217,9 @@ export async function fetchPostsIndex(
   );
 
   const hydratedPosts = posts.filter((post): post is Post => post !== null);
-  updateCache(owner, repo, hydratedPosts);
+  updateCache(owner, repo, hydratedPosts, branch);
 
-  return getCachedPosts(owner, repo) ?? [];
+  return getCachedPosts(owner, repo, branch) ?? [];
 }
 
 export async function fetchPostByPath(
@@ -224,15 +228,17 @@ export async function fetchPostByPath(
   path: string,
   accessToken: string,
   signal?: AbortSignal,
-  forceRefresh = false
+  forceRefresh = false,
+  branch?: string
 ): Promise<Post | null> {
-  const cachedPost = !forceRefresh ? getCachedPostByPath(owner, repo, path) : null;
+  const cachedPost = !forceRefresh ? getCachedPostByPath(owner, repo, path, branch) : null;
   if (cachedPost) {
     return cachedPost;
   }
 
+  const ref = branch || "HEAD";
   const response = await fetch(
-    `https://api.github.com/repos/${owner}/${repo}/contents/${path}`,
+    `https://api.github.com/repos/${owner}/${repo}/contents/${path}?ref=${encodeURIComponent(ref)}`,
     {
       headers: {
         Authorization: `Bearer ${accessToken}`,
@@ -258,7 +264,7 @@ export async function fetchPostByPath(
   }
 
   const post = parsePostFile(path, decodeBase64Utf8(data.content), data.sha);
-  upsertCachedPost(owner, repo, post);
+  upsertCachedPost(owner, repo, post, null, branch);
 
   return post;
 }

@@ -212,20 +212,23 @@ export default function PostsList() {
                     style={{ animationDelay: `${index * 50}ms` }}
                   >
                     <div className="flex items-start justify-between mb-2 gap-2">
-                      <h3 className="font-medium text-sm line-clamp-1 pr-2">
+                      <h3 className="font-medium text-sm line-clamp-1 pr-2 min-w-0 flex-1">
                         {post.title}
                       </h3>
-                      <div className="flex items-center gap-1 shrink-0">
+                      <div className="flex items-center gap-1 shrink-0 flex-wrap justify-end max-w-[45%]">
                         {hasLocalDraft && (
-                          <span className="inline-flex items-center gap-1 rounded-full border border-amber-500/20 bg-amber-500/10 px-2 py-0.5 text-[10px] text-amber-400">
+                          <span className="inline-flex items-center gap-1 rounded-full border border-amber-500/20 bg-amber-500/10 px-2 py-0.5 text-[10px] text-amber-400 whitespace-nowrap">
                             <Cloud size={10} />
                             Draft
                           </span>
                         )}
                         {post.branch && (
-                          <span className="inline-flex items-center gap-1 rounded-full border border-sky-500/20 bg-sky-500/10 px-2 py-0.5 text-[10px] text-sky-300">
-                            <GitBranch size={10} />
-                            Branch
+                          <span 
+                            className="inline-flex items-center gap-1 rounded-full border border-sky-500/20 bg-sky-500/10 px-2 py-0.5 text-[10px] text-sky-300 max-w-full"
+                            title={post.branch}
+                          >
+                            <GitBranch size={10} className="shrink-0" />
+                            <span className="truncate">{post.branch}</span>
                           </span>
                         )}
                       </div>

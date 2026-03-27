@@ -37,6 +37,13 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { listDrafts } from "@/lib/draft-storage";
 import type { Post } from "@/lib/types";
 import {
@@ -56,6 +63,7 @@ import {
   X,
   GitBranch,
   Cloud,
+  Check,
 } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -103,6 +111,8 @@ export default function PostEditor() {
     deleteFile,
     createBranch,
     createPullRequest,
+    listBranches,
+    getDefaultBranch,
   } = useGitHub();
   const { notification, showNotification } = useNotification();
 
@@ -123,6 +133,9 @@ export default function PostEditor() {
   const [isSavingBranch, setIsSavingBranch] = useState(false);
   const [isCreatingPr, setIsCreatingPr] = useState(false);
   const [draftPaths, setDraftPaths] = useState<Set<string>>(new Set());
+  const [branches, setBranches] = useState<Array<{ name: string; commit: { sha: string } }>>([]);
+  const [selectedBranch, setSelectedBranch] = useState<string>("");
+  const [isLoadingBranches, setIsLoadingBranches] = useState(false);
 
   useEffect(() => {
     if (status === "unauthenticated") {
@@ -163,6 +176,30 @@ export default function PostEditor() {
   useEffect(() => {
     void refreshDraftPaths();
   }, [refreshDraftPaths]);
+
+  useEffect(() => {
+    const loadBranches = async () => {
+      if (!session?.accessToken) return;
+      
+      setIsLoadingBranches(true);
+      try {
+        const branchList = await listBranches(owner, repoName);
+        setBranches(branchList);
+        
+        // Set default branch as selected if no branch is currently selected
+        const defaultBranch = await getDefaultBranch(owner, repoName);
+        if (defaultBranch && !selectedBranch) {
+          setSelectedBranch(defaultBranch);
+        }
+      } catch (error) {
+        console.error("Failed to load branches:", error);
+      } finally {
+        setIsLoadingBranches(false);
+      }
+    };
+
+    void loadBranches();
+  }, [session?.accessToken, owner, repoName, listBranches, getDefaultBranch]);
 
   const sourceUpdatedAt = useMemo(() => post?.sha ?? post?.path ?? null, [post?.path, post?.sha]);
 
@@ -702,6 +739,32 @@ export default function PostEditor() {
           </div>
         </div>
 
+        <div className="px-4 pt-4 pb-2">
+          <label className="text-xs text-muted-foreground mb-2 block flex items-center gap-1">
+            <GitBranch size={12} />
+            Branch
+          </label>
+          <Select
+            value={selectedBranch}
+            onValueChange={setSelectedBranch}
+            disabled={isLoadingBranches || branches.length === 0}
+          >
+            <SelectTrigger className="w-full bg-background/80 border-border/80 text-sm">
+              <SelectValue placeholder={isLoadingBranches ? "Carregando..." : "Selecionar branch"} />
+            </SelectTrigger>
+            <SelectContent className="max-h-[280px]">
+              {branches.map((branch) => (
+                <SelectItem key={branch.name} value={branch.name} className="text-sm">
+                  <div className="flex items-center gap-2">
+                    <GitBranch size={12} className="text-muted-foreground" />
+                    <span className="truncate">{branch.name}</span>
+                  </div>
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
         <ScrollArea className="flex-1">
           <div className="p-4 space-y-2">
             {posts.length === 0 ? (
@@ -729,20 +792,23 @@ export default function PostEditor() {
                   }`}
                 >
                   <div className="flex items-start justify-between mb-2 gap-2">
-                    <h3 className="font-medium text-sm line-clamp-1 pr-2">
+                    <h3 className="font-medium text-sm line-clamp-1 pr-2 min-w-0 flex-1">
                       {listedPost.title}
                     </h3>
-                    <div className="flex items-center gap-1 shrink-0">
+                    <div className="flex items-center gap-1 shrink-0 flex-wrap justify-end max-w-[45%]">
                       {listedPost.path && draftPaths.has(listedPost.path) && (
-                        <span className="inline-flex items-center gap-1 rounded-full border border-amber-500/20 bg-amber-500/10 px-2 py-0.5 text-[10px] text-amber-400">
+                        <span className="inline-flex items-center gap-1 rounded-full border border-amber-500/20 bg-amber-500/10 px-2 py-0.5 text-[10px] text-amber-400 whitespace-nowrap">
                           <Cloud size={10} />
                           Draft
                         </span>
                       )}
                       {listedPost.branch && (
-                        <span className="inline-flex items-center gap-1 rounded-full border border-sky-500/20 bg-sky-500/10 px-2 py-0.5 text-[10px] text-sky-300">
-                          <GitBranch size={10} />
-                          Branch
+                        <span 
+                          className="inline-flex items-center gap-1 rounded-full border border-sky-500/20 bg-sky-500/10 px-2 py-0.5 text-[10px] text-sky-300 max-w-full"
+                          title={listedPost.branch}
+                        >
+                          <GitBranch size={10} className="shrink-0" />
+                          <span className="truncate">{listedPost.branch}</span>
                         </span>
                       )}
                     </div>
@@ -971,9 +1037,12 @@ export default function PostEditor() {
               )}
 
               {post.branch && (
-                <div className="flex items-center gap-2 rounded-full border border-amber-500/20 bg-amber-500/10 px-3 py-1 text-xs text-amber-400">
-                  <GitBranch size={12} />
-                  <span className="font-mono">{post.branch}</span>
+                <div 
+                  className="flex items-center gap-2 rounded-full border border-amber-500/20 bg-amber-500/10 px-3 py-1 text-xs text-amber-400 max-w-[200px]"
+                  title={post.branch}
+                >
+                  <GitBranch size={12} className="shrink-0" />
+                  <span className="font-mono truncate">{post.branch}</span>
                 </div>
               )}
 

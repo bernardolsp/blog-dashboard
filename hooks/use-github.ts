@@ -195,6 +195,32 @@ export function useGitHub() {
     }
   }, [accessToken]);
 
+  const listBranches = useCallback(async (owner: string, repo: string) => {
+    if (!accessToken) return [];
+
+    try {
+      const response = await fetch(
+        `https://api.github.com/repos/${owner}/${repo}/branches?per_page=100`,
+        {
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+            Accept: "application/vnd.github.v3+json",
+          },
+        }
+      );
+
+      if (!response.ok) {
+        return [];
+      }
+
+      const data = await response.json();
+      return data as Array<{ name: string; commit: { sha: string } }>;
+    } catch (error) {
+      console.error("Failed to fetch branches:", error);
+      return [];
+    }
+  }, [accessToken]);
+
   const getDefaultBranch = useCallback(async (owner: string, repo: string) => {
     if (!accessToken) return null;
 
@@ -412,5 +438,6 @@ export function useGitHub() {
     uploadFile,
     deleteFile,
     getDefaultBranch,
+    listBranches,
   };
 }

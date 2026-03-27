@@ -3,9 +3,17 @@
 import { useState, useEffect, useCallback } from "react";
 import { useSession, signOut } from "next-auth/react";
 import { useParams, useRouter } from "next/navigation";
+import { useGitHub } from "@/hooks/use-github";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Notification } from "@/components/notification";
 import { useNotification } from "@/hooks/use-notification";
 import { listDrafts } from "@/lib/draft-storage";
@@ -28,9 +36,13 @@ export default function PostsList() {
   const params = useParams<{ owner: string; name: string }>();
   const router = useRouter();
   const { data: session, status } = useSession();
+  const { listBranches, getDefaultBranch } = useGitHub();
   const [posts, setPosts] = useState<Post[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [draftPaths, setDraftPaths] = useState<Set<string>>(new Set());
+  const [branches, setBranches] = useState<Array<{ name: string; commit: { sha: string } }>>([]);
+  const [selectedBranch, setSelectedBranch] = useState<string>("");
+  const [isLoadingBranches, setIsLoadingBranches] = useState(false);
   const { notification, showNotification } = useNotification();
 
   const owner = params.owner;
@@ -124,6 +136,30 @@ export default function PostsList() {
     return () => controller.abort();
   }, [session?.accessToken, loadPosts]);
 
+  useEffect(() => {
+    const loadBranches = async () => {
+      if (!session?.accessToken) return;
+      
+      setIsLoadingBranches(true);
+      try {
+        const branchList = await listBranches(owner, name);
+        setBranches(branchList);
+        
+        // Set default branch as selected if no branch is currently selected
+        const defaultBranch = await getDefaultBranch(owner, name);
+        if (defaultBranch && !selectedBranch) {
+          setSelectedBranch(defaultBranch);
+        }
+      } catch (error) {
+        console.error("Failed to load branches:", error);
+      } finally {
+        setIsLoadingBranches(false);
+      }
+    };
+
+    void loadBranches();
+  }, [session?.accessToken, owner, name, listBranches, getDefaultBranch, selectedBranch]);
+
   const createNewPost = () => {
     router.push(`/repo/${owner}/${name}/new`);
   };
@@ -180,6 +216,32 @@ export default function PostsList() {
               <FolderOpen size={16} />
             </Button>
           </div>
+        </div>
+
+        <div className="px-4 pt-4 pb-2">
+          <label className="text-xs text-muted-foreground mb-2 block flex items-center gap-1">
+            <GitBranch size={12} />
+            Branch
+          </label>
+          <Select
+            value={selectedBranch}
+            onValueChange={setSelectedBranch}
+            disabled={isLoadingBranches || branches.length === 0}
+          >
+            <SelectTrigger className="w-full bg-background/80 border-border/80 text-sm">
+              <SelectValue placeholder={isLoadingBranches ? "Carregando..." : "Selecionar branch"} />
+            </SelectTrigger>
+            <SelectContent className="max-h-[280px]">
+              {branches.map((branch) => (
+                <SelectItem key={branch.name} value={branch.name} className="text-sm">
+                  <div className="flex items-center gap-2">
+                    <GitBranch size={12} className="text-muted-foreground" />
+                    <span className="truncate">{branch.name}</span>
+                  </div>
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
 
         <ScrollArea className="flex-1">
